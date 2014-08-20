@@ -33,6 +33,7 @@ my $TriCount= 0;
 my $QuadCount = 0;
 my $SingleTri =0;
 
+unless (@ARGV == 2) {die;}
 my $in = $ARGV[0];
 my $pop = $ARGV[1];
 
