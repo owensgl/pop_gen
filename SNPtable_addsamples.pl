@@ -17,7 +17,9 @@ $t{"K"} = "TG";
 $t{"Y"} = "CT";
 
 my %h;
-
+my %samplepop;
+my %samplename;
+my $endcolumn;
 
 my $table1 = $ARGV[0]; #table with snps you want to keep
 my $table2 = $ARGV[1]; #larger snp table to be subset
@@ -29,41 +31,52 @@ $. = 0;
 
 
 
+
+open TABLE2, $table2;
+while (<TABLE2>){
+	chomp;
+	my @a = split (/\t/,$_);
+	$endcolumn = $#a;
+		if ($. == 1){
+			foreach my $i ($badcolumns..$#a){ #Get sample names for each column
+        			$samplename{$i} = $a[$i];
+        		}
+        	}
+		}else{
+			my $loc = "$a[2]\t$a[3]";
+			foreach my $i ($badcolumns..$#a){ 
+				if ($iupac_coding eq "TRUE"){
+					$a[$i] = $t{$a[$i]};
+				}
+				$h{$loc}{$samplename{$i}} = $a[$i];
+			}
+		}
+	}
+}
+
+
 open TABLE1, $table1;
 while (<TABLE1>){
 	chomp;
 	my @a = split (/\t/,$_);
 		if ($. == 1){
+			print "$_";
+			foreach my $i ($badcolumns..$endcolumn){
+				print "\t$samplename{$i}";
+			}
+			print "\n";
         	}
         	else{
         		my $loc = "$a[0]\t$a[1]";
-        		$h{$loc}++;
+			print "$_";
+			foreach my $i ($badcolumns..$endcolumn){
+				print "\t$h{$loc}{$samplename{$i}}";
+			}
+			print "\n";
  		}
  	}
 }
 close TABLE1;
-
-open TABLE2, $table2;
-while (<TABLE2>){
-	chomp;
-		if ($. == 1){
-			print "$_\n";
-		}else{
-			my $loc = "$a[2]\t$a[3]";
-			if ($h{$loc}){
-				foreach my $i ($badcolumns..$#a){ 
-					if ($iupac_coding eq "TRUE"){
-						$a[$i] = $t{$a[$i]};
-					}
-					print "\t$a[$i]";
-				}print "\n";
-			}else{
-				print "\n";
-			}
-		}
-	}
-}
-	
 			
         	
 
