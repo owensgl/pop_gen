@@ -2,7 +2,7 @@
 
 use warnings;
 use strict;
-use lib '/home/owens/bin'; #For GObox server
+use lib './'; #For GObox server
 my %t;
 $t{"N"} = "NN";
 $t{"A"} = "AA";
