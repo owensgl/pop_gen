@@ -313,7 +313,7 @@ while (<IN>){
 			$WC_b = "0";
 			$WC_c = "0";
 			$WC_denom = "0";
-			$WC_fst = "NA";
+			$WC_fst = "0";
 			$freq_dif = "0";
 			$pi = "0";
 		}

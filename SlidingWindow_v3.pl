@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 #Sliding window for Fst and dxy 
+#V3 introduces variable window size
 use List::MoreUtils qw(uniq);
 use warnings;
 
@@ -7,7 +8,7 @@ my %h;
 my %poslist;
 my @chrlist;
 my $Start = 0;
-my $Size = 1000000;
+my $Size = $ARGV[0];
 my @statlist = ("dxy","FstNum","FstDenom","Hexp1","Hexp2");
 my @colname;
 my %count;
