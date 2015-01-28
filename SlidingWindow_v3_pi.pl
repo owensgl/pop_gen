@@ -9,7 +9,7 @@ my %poslist;
 my @chrlist;
 my $Start = 0;
 my $Size = $ARGV[0];
-my @statlist = ("dxy","FstNum","FstDenom","Hexp1","Hexp2");
+my @statlist = ("Hexp");
 my @colname;
 my %count;
 
@@ -35,17 +35,17 @@ while (<STDIN>){
 				$stat_hash{'FstNum'} = $a[$i];
 			}elsif ($colname[$i] eq "FstDenom"){
 				$stat_hash{'FstDenom'} = $a[$i];
-			}elsif ($colname[$i] eq "Hexp1"){
-				$stat_hash{'Hexp1'} = $a[$i];
-			}elsif ($colname[$i] eq "Hexp2"){
-				$stat_hash{'Hexp2'} = $a[$i];
+			}elsif ($colname[$i] eq "Hexp"){
+				$stat_hash{'Hexp'} = $a[$i];
+			}elsif ($colname[$i] eq "N1"){
+				$stat_hash{'N1'} = $a[$i];
 			}
 		}	#Take each stat and put it into a hash
-		next if ($stat_hash{'dxy'} eq "NA"); 
+		next if ($stat_hash{'N1'} eq "0"); 
 		$h{'usablecount'}{$chr}{$pos}++;
 		push (@chrlist, $chr);
 		$poslist{$chr}{$pos}++;
-		if ($stat_hash{'dxy'}){
+		if ($stat_hash{'Hexp'} ne "0"){
 			$h{'variablecount'}{$chr}{$pos}++;
 		}
 		foreach my $stat (@statlist){
@@ -56,7 +56,7 @@ while (<STDIN>){
 }	
 
 my @uniq_chr = uniq(@chrlist);
-print "Chr\tStartPos\tEndPos\tMidPos\tTotalSites\tVariableSites\tDxy\tFst\tHexp1\tHexp2\n";
+print "Chr\tStartPos\tEndPos\tMidPos\tTotalSites\tVariableSites\tHexp\n";
 foreach my $chr (@uniq_chr){ #For each chromosome
 	my $s = $Start; #Start position of scan
 	my $e = $Size; #Size of each window
@@ -118,12 +118,12 @@ foreach my $chr (@uniq_chr){ #For each chromosome
 						$ave{$stat} = "0";
 					}
 				}
-				print "$chr\t$s\t$e\t".($s+($Size/2))."\t$total{'usablecount'}\t$total{'variablecount'}\t$ave{'dxy'}\t$total{'Fst'}\t$ave{'Hexp1'}\t$ave{'Hexp2'}\n";
+				print "$chr\t$s\t$e\t".($s+($Size/2))."\t$total{'usablecount'}\t$total{'variablecount'}\t$ave{'Hexp'}\n";
 			}else{ #If there are usable sites but no variable sites
 				unless ($total{'usablecount'}){
 					$total{'usablecount'} = "0";
 				}
-				print "$chr\t$s\t$e\t".($s+($Size/2))."\t$total{'usablecount'}\t0\t0\tNA\t0\t0\n";
+				print "$chr\t$s\t$e\t".($s+($Size/2))."\t$total{'usablecount'}\t0\t0\n";
 			}
 			# reset these
 			$count = 1;
@@ -152,7 +152,7 @@ foreach my $chr (@uniq_chr){ #For each chromosome
                                 $s += $Size;
                                 $e += $Size;
 				if ($pos>$e){
-					print "$chr\t$s\t$e\t".($s+($Size/2))."\t0\t0\tNA\tNA\tNA\tNA\n";
+					print "$chr\t$s\t$e\t".($s+($Size/2))."\t0\t0\tNA\n";
 				}
                         }    
 		}
@@ -184,9 +184,9 @@ foreach my $chr (@uniq_chr){ #For each chromosome
 	                }
 		}
 
-		print "$chr\t$s\t$e\t".($s+($Size/2))."\t$total{'usablecount'}\t$total{'variablecount'}\t$ave{'dxy'}\t$total{'Fst'}\t$ave{'Hexp1'}\t$ave{'Hexp2'}\n";
+		print "$chr\t$s\t$e\t".($s+($Size/2))."\t$total{'usablecount'}\t$total{'variablecount'}\t$ave{'Hexp'}\n";
 	}else{
-		print "$chr\t$s\t$e\t".($s+($Size/2))."\t$total{'usablecount'}\t0\t0\tNA\t0\t0\n";
+		print "$chr\t$s\t$e\t".($s+($Size/2))."\t$total{'usablecount'}\t0\t0\t0\n";
 	}
 }
 

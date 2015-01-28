@@ -75,7 +75,7 @@ while (<IN>){
         		}
         	}
         	print $a[0]."-"."$a[1]\t$a[0]\t$a[1]";
-		print "\tN1\tN2\tNTotal\tDxy\tFstNum\tFstDenom\tFst\tHexp1\tHexp2\tFreqDif";
+		print "\tN1\tHexp";
 	}
 	else{
 		next if /^\s*$/;
@@ -152,7 +152,7 @@ while (<IN>){
 		$CallRate = $BC{"total"}{"Calls"}/ $BC{"total"}{"total"};
 
 		#print "\t".keys %total_alleles;
-		unless (($BC{"1"}{"Calls"}) and ($BC{"2"}{"Calls"})){
+		unless ($BC{"1"}{"Calls"}){
                         $pAll = "NA";
                         $qAll = "NA";
                         $HeAll = "NA";
@@ -220,20 +220,10 @@ while (<IN>){
 			}else{
 				$p1 = 0;
 			}
-			if ($BC{"2"}{$b1}){
-				$p2 = $BC{"2"}{$b1}/($BC{"2"}{"Calls"}*2);
-			}else{
-				$p2 = 0;
-			}
 			if ($BC{"1"}{$b2}){
 				$q1 = $BC{"1"}{$b2}/($BC{"1"}{"Calls"}*2);
 			}else{
 				$q1 = 0;
-			}
-			if ($BC{"2"}{$b2}){
-				$q2 = $BC{"2"}{$b2}/($BC{"2"}{"Calls"}*2);
-			}else{
-				$q2 = 0;
 			}
 
 			#Heterozygosity observed in each population
@@ -242,78 +232,19 @@ while (<IN>){
 			}else{
 				$Ho1 = 0;
 			}
-			if ($BC{"2"}{"Het"}){
-				$Ho2 = $BC{"2"}{"Het"}/$BC{"2"}{"Calls"}
-			}else{
-				$Ho2 = 0;
-			}
 
 			#Amount of pairwise difference between population
-			$dxy = (($p1 * $q2) + ($p2 * $q1));
 
 			#Heterozygosity expected
 			$He1 = 2*($p1 * $q1);
-			$He2 = 2*($p2 * $q2);
 
 
-			#Average expected heterozygosity in each population	
-			$HsBar = (($He1+$He2)/2);
-			
-			#The difference in alleles frequency
-			$freq_dif = abs($p1 - $p2);
-
-
-			#Average sample size for populations
-			$n_bar = ($BC{"total"}{"Calls"} / 2);
 			#Sample size for population 1
 			if ($BC{"1"}{"Calls"}){
 				$n_1 = $BC{"1"}{"Calls"};
 			}else{
 				$n_1 = 0;
 			}
-			#Sample size for population 2
-			if ($BC{"2"}{"Calls"}){
-				$n_2 = $BC{"2"}{"Calls"};
-			}else{
-				$n_2 = 0;
-			}
-			#Average observed heterozygosity weighted by population (NEed to scale for sample size)
-			$H_bar = ((($Ho1 * $n_1) + ($Ho2 * $n_2)) / $n_total);
-
-			#Sigma squared. The sample variance of allele p frequencies over populations
-			$sigma_squared = ((($n_1 * (($p1 - $pAll) ** 2)) / (($Npops - 1) * $n_bar)) + (($n_2 * (($p2 - $pAll) ** 2) / (($Npops - 1) * $n_bar))));
-			#The squared coefficient of variation of sample sizes
-			$n_c = ((($Npops * $n_bar) - ((($n_1 ** 2) / ($Npops * $n_bar)) + (($n_2 ** 2) / ($Npops * $n_bar)))) / ($Npops - 1));
-			#Weir and Cockerham, the observed component of variance for between populations
-			unless (($n_c eq 0) or ($n_bar <= 1)){
-				$WC_a  = (($n_bar / $n_c) * ($sigma_squared - ((1 / ($n_bar - 1)) * (($pAll * $qAll) - ((($Npops - 1) / $Npops) * $sigma_squared) - (0.25 * $H_bar)))));
-			}else{
-				$WC_a = "NA";
-			}
-			#Weir and Cockerham, the observed component of variance for between individuals within a population
-			unless ($n_bar <= 1){
-				$WC_b = (($n_bar / ($n_bar - 1)) * (($pAll * $qAll) - ((($Npops - 1) / $Npops) * $sigma_squared) - (((2 * $n_bar) - 1) / (4 * $n_bar) * $H_bar)));
-			}else{
-				$WC_b = "NA";
-			}
-			#Weir and Cockerham, the observed component of variance for between gametes within individuals
-			$WC_c = (0.5 * $H_bar);
-			#Weir and Cockerham denominator in Fst calculation
-			unless (($WC_a eq "NA") or ($WC_b eq "NA")){			
-				$WC_denom = ($WC_a + $WC_b + $WC_c);
-			}else{
-				$WC_denom = "NA";
-			}
-			#Weir and Cockerham, Theta (Fst)
-			unless ($WC_denom eq "NA"){
-				$WC_fst = ($WC_a / $WC_denom);
-			}else {
-				$WC_fst = "NA";
-			}
-			#Diversity (pi) for single site.
-			$pi = 2*($pAll * $qAll);
-			$BiCount++;
-		
 		}elsif (keys %total_alleles eq 1){
 			$pAll = 1;
 			$qAll = 0;
@@ -350,7 +281,7 @@ while (<IN>){
 			$WC_b = "0";
 			$WC_c = "0";
 			$WC_denom = "0";
-			$WC_fst = "Inf";
+			$WC_fst = "0";
 			$freq_dif = "0";
 			$pi = "0";
 		}
@@ -411,7 +342,7 @@ while (<IN>){
 			$pi = "NA"; ###Need to fix
 			$freq_dif = "NA";
 		}
-		print "\t$n_1\t$n_2\t$n_total\t$dxy\t$WC_a\t$WC_denom\t$WC_fst\t$He1\t$He2\t$freq_dif";
+		print "\t$n_1\t$He1";
 	}
 }
 close IN;
