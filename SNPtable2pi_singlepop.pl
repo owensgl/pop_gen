@@ -75,7 +75,7 @@ while (<IN>){
         		}
         	}
         	print $a[0]."-"."$a[1]\t$a[0]\t$a[1]";
-		print "\tN1\tHexp_1\tN2\tHexp_2";
+		print "\tN1\tHexp";
 	}
 	else{
 		next if /^\s*$/;
@@ -225,17 +225,7 @@ while (<IN>){
 			}else{
 				$q1 = 0;
 			}
-			if ($BC{"2"}{$b1}){
-				$p2 = $BC{"2"}{$b1}/($BC{"2"}{"Calls"}*2);
-			}else{
-				$p2 = 0;
-			}
-			if ($BC{"2"}{$b2}){
-				$q2 = $BC{"2"}{$b2}/($BC{"2"}{"Calls"}*2);
-			}else{
-				$q2 = 0;
-			}
-				
+
 			#Heterozygosity observed in each population
 			if ($BC{"1"}{"Het"}){
 				$Ho1 = $BC{"1"}{"Het"}/$BC{"1"}{"Calls"}
@@ -247,18 +237,13 @@ while (<IN>){
 
 			#Heterozygosity expected
 			$He1 = 2*($p1 * $q1);
-			$He2 = 2*($p2 * $q2);
+
 
 			#Sample size for population 1
 			if ($BC{"1"}{"Calls"}){
 				$n_1 = $BC{"1"}{"Calls"};
 			}else{
 				$n_1 = 0;
-			}
-			if ($BC{"2"}{"Calls"}){
-				$n_2 = $BC{"2"}{"Calls"};
-			}else{
-				$n_2 = 0;
 			}
 		}elsif (keys %total_alleles eq 1){
 			$pAll = 1;
@@ -357,7 +342,7 @@ while (<IN>){
 			$pi = "NA"; ###Need to fix
 			$freq_dif = "NA";
 		}
-		print "\t$n_1\t$He1\t$n_2\t$He2";
+		print "\t$n_1\t$He1";
 	}
 }
 close IN;
