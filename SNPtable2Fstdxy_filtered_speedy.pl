@@ -2,20 +2,6 @@
 
 use warnings;
 use strict;
-use lib '/home/owens/bin/pop_gen/'; #For GObox server
-my %t;
-$t{"N"} = "NN";
-$t{"A"} = "AA";
-$t{"T"} = "TT";
-$t{"G"} = "GG";
-$t{"C"} = "CC";
-$t{"W"} = "TA";
-$t{"R"} = "AG";
-$t{"M"} = "AC";
-$t{"S"} = "CG";
-$t{"K"} = "TG";
-$t{"Y"} = "CT";
-
 my $min_MAF = 0.05; #minimum total minor allele frequency
 my $min_n = 5; #minimum number of samples called per population
 my $max_Hobs = 0.6; #Maximum observed heterozygosity
@@ -31,19 +17,12 @@ my %samplepop;
 
 my %poplist;
 my $Npops = 2;
-my $BiCount = 0;
-my $TriCount= 0;
-my $QuadCount = 0;
-my $SingleTri =0;
 
-unless (@ARGV == 3) {die;}
-my $in = $ARGV[0]; #SNP table
-my $pop = $ARGV[1]; #List of samples linked to population 
-my $groups = $ARGV[2]; #List of all populations with populations selected (1 and 2)
-require "countbadcolumns.pl";
-my ($iupac_coding, $badcolumns) = count_bad_columns($in);
-$. = 0;
+unless (@ARGV == 2) {die;}
+my $pop = $ARGV[0]; #List of samples linked to population 
+my $groups = $ARGV[1]; #List of all populations with populations selected (1 and 2)
 
+my $badcolumns= 2;
 open POP, $pop;
 while (<POP>){
 	chomp;
@@ -65,8 +44,7 @@ close GROUP;
 my $lastsample;
 
 my %samplegroup;
-open IN, $in;
-while (<IN>){
+while (<STDIN>){
 	chomp;
 	my @a = split (/\t/,$_);
   	if ($. == 1){
@@ -92,11 +70,7 @@ while (<IN>){
 				goto MOVEON;
 			}
 			if ($samplegroup{$i}){
-				$BC{"total"}{"total"}++;
-				if ($iupac_coding eq "TRUE"){
-						$a[$i] = $t{$a[$i]};
-				}
-				unless (($a[$i] eq "NN")or($a[$i] eq "XX")){
+				unless ($a[$i] eq "NN"){
 					my @bases = split(//, $a[$i]);
 					$total_alleles{$bases[0]}++;
 					$total_alleles{$bases[1]}++;
@@ -149,16 +123,15 @@ while (<IN>){
 		
 
 		unless ($BC{"total"}{"Calls"}){
-			$BC{"total"}{"Calls"} = 0;
+			goto SKIP;
 		}
 		
-		$CallRate = $BC{"total"}{"Calls"}/ $BC{"total"}{"total"};
-
 		#print "\t".keys %total_alleles;
 		unless (($BC{"1"}{"Calls"}) and ($BC{"2"}{"Calls"})){
-			unless(($BC{"1"}{"Calls"} > $min_n) and ($BC{"2"}{"Calls"} > $min_n){
-				goto SKIP;
-			}
+			goto SKIP;
+		}unless(($BC{"1"}{"Calls"} > $min_n) and ($BC{"2"}{"Calls"} > $min_n)){
+			goto SKIP;
+		
 		}elsif (keys %total_alleles == 2){
 		
 			#Sort bases so p is the major allele and q is the minor allele
@@ -176,11 +149,6 @@ while (<IN>){
 			$qAll = $BC{"total"}{$b2}/($BC{"total"}{"Calls"}*2);
 			if ($qAll < $min_MAF){
 				goto SKIP; #Skip line if minor allele freq is less than cut off
-			}
-			if ($BC{"2"}{"Calls"} < $min_n){ #Skip line if less than minimum number of samples sequenced
-				goto SKIP;
-			}elsif ($BC{"1"}{"Calls"} < $min_n){
-				goto SKIP;
 			}
 			#Heterozygosity expected in all samples
 			$HeAll = 2*($pAll * $qAll);
@@ -239,9 +207,6 @@ while (<IN>){
 			#Average expected heterozygosity in each population	
 			$HsBar = (($He1+$He2)/2);
 			
-			#The difference in alleles frequency
-			$freq_dif = abs($p1 - $p2);
-
 
 			#Average sample size for populations
 			$n_bar = ($BC{"total"}{"Calls"} / 2);
@@ -292,7 +257,6 @@ while (<IN>){
 			}
 			#Diversity (pi) for single site.
 			$pi = 2*($pAll * $qAll);
-			$BiCount++;
 		
 		}elsif (keys %total_alleles eq 1){
 			$pAll = 1;
@@ -334,8 +298,6 @@ while (<IN>){
 			$WC_c = "0";
 			$WC_denom = "0";
 			$WC_fst = "Inf";
-			$freq_dif = "0";
-			$pi = "0";
 		}
 		elsif (keys %total_alleles eq 3){ #Need to account for three alleles in tri-allelic sites.
 			goto SKIP;
@@ -347,9 +309,8 @@ while (<IN>){
                 foreach my $i (1..($badcolumns-1)){
                         print "\t$a[$i]";
                 }
-		print "\t$n_1\t$n_2\t$n_total\t$dxy\t$WC_a\t$WC_denom\t$WC_fst\t$He1\t$He2\t$freq_dif";
+		print "\t$n_1\t$n_2\t$n_total\t$dxy\t$WC_a\t$WC_denom\t$WC_fst\t$He1\t$He2";
 	}
 	SKIP:
 }
-close IN;
 

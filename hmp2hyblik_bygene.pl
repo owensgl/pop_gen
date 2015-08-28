@@ -22,7 +22,34 @@ $t{"Y"} = "CT";
 #INPUT
 #Hapmap piped in stdin
 my $popfile = $ARGV[0]; #A population file.
+my $fasta = $ARGV[1]; #Fasta file of each gene
 
+my %genehash;
+my %genestart;
+my %geneend;
+my %genechr;
+my @genelist;
+open FASTA, $fasta;
+while (<FASTA>){
+	chomp;
+	if ($_ =~/^\>/g){
+		my @a = split(/\ /, $_);
+		my $begin = $a[2];
+		$begin =~ s/begin=//g;
+		my $end = $a[3];
+		$end =~ s/end=//g;
+		my $name = $a[0];
+		$name =~ s/>//g;
+		my $chr = $a[5];
+		$chr =~ s/chr=//g;
+		$genestart{$name} = ($begin - 200);
+		$geneend{$name} = ($end + 200);
+		$genechr{$name} = $chr;
+		push (@genelist, $name);
+	}
+}
+
+close FASTA;		 
 my %pop;
 my %popList;
 my %samplepop;
@@ -38,10 +65,8 @@ while (<POP>){ #Load in population information linked with sample name
 }
 close POP;
 #Window variables
-my $window_size = 1000000; #Number of bases in each sliding window
-my $current_chrom;
-my $end = $window_size;
-my $min_sites = 10; #minimum number of sites used in a window
+my $current_gene;
+my $min_sites = 1; #minimum number of sites used in a window
 #Looping stats
 my %likelihoodcount;
 my $sitecount;
@@ -62,32 +87,37 @@ while (<STDIN>){
 				$samplename{$i} = $a[$i];
 			}
 		}
-		print  "sample\tchrom\tstart\tend\tpercentP2\tlikelihood";
+		print  "sample\tchrom\tstart\tend\tgene\tsites\tpercentP2\tlikelihood";
 	}else{
 		next if /^\s*$/;
 		my $loc = $a[0];
 		my $chrom = $a[2];
 		my $pos = $a[3];
-		unless ($current_chrom){
-			$current_chrom = $chrom;
+		my $gene;
+		foreach my $g (@genelist){
+			if ($genechr{$g} eq $chrom){
+				if ($genestart{$g} <= $pos){
+					if ($geneend{$g} >= $pos){
+						$gene = $g;
+						goto FOUNDGENE; #If you found the gene, go on, or skip this line.
+					}
+				}
+			}
 		}
-		if ($. == 2){
-			until($end > $pos){ #move the end point of the window until it is after the current marker.
-            		$end += $window_size;
-            		}
+		next;
+		FOUNDGENE:
+		unless ($current_gene){
+			$current_gene = $gene;
 		}
-		if (($current_chrom ne $chrom) or ($end < $pos)){ #If it's starting a new window, do all the calculations
-			my $start = $end - $window_size;
-			#print FINALOUT "\n$current_chrom\t$start\t$end\t$sitecount";
+		if ($current_gene ne $gene){
 			foreach my $i($badcolumns..$#a){
 				if ($samplepop{$i}){
-#					if ($samplepop{$i} eq "H"){
-					if (($samplepop{$i} eq "H") or ($samplepop{$i} eq "P1") or ($samplepop{$i} eq "P2")){
+					if ($samplepop{$i} eq "H"){
 						if ($likelihoodcount{$i}){
 							if ($likelihoodcount{$i} > $min_sites){
 								foreach my $percentP2 (0..100){
 									$percentP2 = $percentP2/100;
-									print "\n$samplename{$i}\t$current_chrom\t$start\t$end\t$percentP2\t$likelihood{$i}{$percentP2}";
+									print "\n$samplename{$i}\t$genechr{$current_gene}\t$genestart{$current_gene}\t$geneend{$current_gene}\t$current_gene\t$likelihoodcount{$i}\t$percentP2\t$likelihood{$i}{$percentP2}";
 											
 								}
 
@@ -104,13 +134,7 @@ while (<STDIN>){
 			undef %likelihood;
 			undef %likelihoodcount;
 			$sitecount = 0;
-			if ($current_chrom ne $chrom){ #If on the next chromosome, reset the end point for the window
-				$current_chrom = $chrom;
-				$end = $window_size;
-			}
-			until($end > $pos){ #move the end point of the window until it is after the current marker.
-				$end += $window_size;
-			}
+			$current_gene = $gene;
 			
 		}
 		my %BC;
@@ -179,8 +203,7 @@ while (<STDIN>){
 			}
 			foreach my $i ($badcolumns..$#a){
 				if ($samplepop{$i}){
-#					if ($samplepop{$i} eq "H"){
-					if (($samplepop{$i} eq "H") or ($samplepop{$i} eq "P1") or ($samplepop{$i} eq "P2")){
+					if ($samplepop{$i} eq "H"){
 						if ($BC{$i}{"Calls"}){
 							$likelihoodcount{$i}++;
 							foreach my $percentP2 (0..100){

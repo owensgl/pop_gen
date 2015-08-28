@@ -38,10 +38,10 @@ while (<POP>){ #Load in population information linked with sample name
 }
 close POP;
 #Window variables
-my $window_size = 1000000; #Number of bases in each sliding window
+my $window_size = 0.5; #in cM
 my $current_chrom;
 my $end = $window_size;
-my $min_sites = 10; #minimum number of sites used in a window
+my $min_sites = 1; #minimum number of sites used in a window
 #Looping stats
 my %likelihoodcount;
 my $sitecount;
@@ -49,7 +49,7 @@ my %likelihood;
 
 #Variables guessed from file, set for hapmap without iupac
 my $iupac_coding= "False";
-my $badcolumns="11";
+my $badcolumns="12";
 
 while (<STDIN>){
 	chomp;
@@ -68,21 +68,24 @@ while (<STDIN>){
 		my $loc = $a[0];
 		my $chrom = $a[2];
 		my $pos = $a[3];
+		my $cM = $a[4];
+		if ($cM eq "NA"){
+			next;
+		}
 		unless ($current_chrom){
 			$current_chrom = $chrom;
 		}
 		if ($. == 2){
-			until($end > $pos){ #move the end point of the window until it is after the current marker.
+			until($end > $cM){ #move the end point of the window until it is after the current marker.
             		$end += $window_size;
             		}
 		}
-		if (($current_chrom ne $chrom) or ($end < $pos)){ #If it's starting a new window, do all the calculations
+		if (($current_chrom ne $chrom) or ($end < $cM)){ #If it's starting a new window, do all the calculations
 			my $start = $end - $window_size;
 			#print FINALOUT "\n$current_chrom\t$start\t$end\t$sitecount";
 			foreach my $i($badcolumns..$#a){
 				if ($samplepop{$i}){
-#					if ($samplepop{$i} eq "H"){
-					if (($samplepop{$i} eq "H") or ($samplepop{$i} eq "P1") or ($samplepop{$i} eq "P2")){
+					if ($samplepop{$i} eq "H"){
 						if ($likelihoodcount{$i}){
 							if ($likelihoodcount{$i} > $min_sites){
 								foreach my $percentP2 (0..100){
@@ -108,7 +111,7 @@ while (<STDIN>){
 				$current_chrom = $chrom;
 				$end = $window_size;
 			}
-			until($end > $pos){ #move the end point of the window until it is after the current marker.
+			until($end > $cM){ #move the end point of the window until it is after the current marker.
 				$end += $window_size;
 			}
 			
@@ -179,8 +182,7 @@ while (<STDIN>){
 			}
 			foreach my $i ($badcolumns..$#a){
 				if ($samplepop{$i}){
-#					if ($samplepop{$i} eq "H"){
-					if (($samplepop{$i} eq "H") or ($samplepop{$i} eq "P1") or ($samplepop{$i} eq "P2")){
+					if ($samplepop{$i} eq "H"){
 						if ($BC{$i}{"Calls"}){
 							$likelihoodcount{$i}++;
 							foreach my $percentP2 (0..100){

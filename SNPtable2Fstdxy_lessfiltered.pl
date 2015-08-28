@@ -17,8 +17,8 @@ $t{"K"} = "TG";
 $t{"Y"} = "CT";
 
 my $min_MAF = 0.05; #minimum total minor allele frequency
-my $min_n = 5; #minimum number of samples called per population
-my $max_Hobs = 0.6; #Maximum observed heterozygosity
+my $min_n = 2; #minimum number of samples called per population
+my $max_Hobs = 1; #Maximum observed heterozygosity #THIS FILTER IS ESSENTIALLY REMOVED
 my %samples;
 my @Good_samples;
 my %Anc;
@@ -62,7 +62,6 @@ while (<GROUP>){
 }
 close GROUP;
 
-my $lastsample;
 
 my %samplegroup;
 open IN, $in;
@@ -74,7 +73,6 @@ while (<IN>){
         		if ($pop{$a[$i]}){
         			$samplepop{$i} = $pop{$a[$i]};
 				if ($group{$pop{$a[$i]}}){
-					$lastsample = $i;
 					$samplegroup{$i} = $group{$pop{$a[$i]}};
 				}
         		}
@@ -88,9 +86,6 @@ while (<IN>){
 		my %BS;
 		my %total_alleles;
 		foreach my $i ($badcolumns..$#a){
-			if ($i > $lastsample){
-				goto MOVEON;
-			}
 			if ($samplegroup{$i}){
 				$BC{"total"}{"total"}++;
 				if ($iupac_coding eq "TRUE"){
@@ -116,7 +111,7 @@ while (<IN>){
 				}
 			}
 		}
-		MOVEON:
+
 		my $pAll;
 		my $qAll;
 		my $HeAll;
@@ -156,9 +151,7 @@ while (<IN>){
 
 		#print "\t".keys %total_alleles;
 		unless (($BC{"1"}{"Calls"}) and ($BC{"2"}{"Calls"})){
-			unless(($BC{"1"}{"Calls"} > $min_n) and ($BC{"2"}{"Calls"} > $min_n){
-				goto SKIP;
-			}
+			goto SKIP;
 		}elsif (keys %total_alleles == 2){
 		
 			#Sort bases so p is the major allele and q is the minor allele
