@@ -50,7 +50,8 @@ my %likelihood;
 #Variables guessed from file, set for hapmap without iupac
 my $iupac_coding= "False";
 my $badcolumns="11";
-
+my %good_number_hash;
+my $counter;
 while (<STDIN>){
 	chomp;
 	my @a = split(/\t/,$_);
@@ -60,14 +61,19 @@ while (<STDIN>){
 			if ($pop{$a[$i]}){
 				$samplepop{$i} = $pop{$a[$i]};
 				$samplename{$i} = $a[$i];
+				$good_number_hash{$i}++;
 			}
 		}
 		print  "sample\tchrom\tstart\tend\tpercentP2\tlikelihood";
 	}else{
 		next if /^\s*$/;
+		$counter++;
 		my $loc = $a[0];
 		my $chrom = $a[2];
 		my $pos = $a[3];
+		if (($counter % 100000)== 0){
+        	        print STDERR "Hyblik Processing $chrom $pos...\n";
+        	}
 		unless ($current_chrom){
 			$current_chrom = $chrom;
 		}
@@ -115,7 +121,31 @@ while (<STDIN>){
 		}
 		my %BC;
 		my %total_alleles;
-		foreach my $i($badcolumns..$#a){
+		my $P1count = 0;
+		my $P2count = 0;
+		foreach my $i (keys %good_number_hash){ #Load up parental alleles
+                	if ($a[$i] ne "NN"){
+                        	if ($samplepop{$i} eq "P1"){
+                        	        $P1count++;
+                        	}elsif($samplepop{$i} eq "P2"){
+                                	$P2count++;
+                       		}
+                	}
+        	}
+		unless(($P1count >=5) and ($P2count >= 5)){
+                	next;
+        	}
+		my $min_count;
+		if ($P1count < $P2count){
+                	$min_count = $P1count;
+        	}else{
+                	$min_count = $P2count;
+        	}
+		my %P1alleles;
+		my %P2alleles;
+		my $P1count2 = 0;
+		my $P2count2 = 0;
+		foreach my $i(keys %good_number_hash){
 			if ($samplepop{$i}){
 				$BC{"total"}{"total"}++;
 				if ($iupac_coding eq "TRUE"){
@@ -137,6 +167,17 @@ while (<STDIN>){
 
 					$BC{"total"}{"Calls"}++;
 					$BC{$samplepop{$i}}{"Calls"}++;
+					if (($samplepop{$i} eq "P1") and ($P1count2 < $min_count)){
+						$P1alleles{$bases[0]}++;
+						$P1alleles{$bases[1]}++;
+						$P1alleles{"Calls"}++;
+						$P1count2++;
+					}elsif(($samplepop{$i} eq "P2") and ($P2count2 < $min_count)){
+						$P2alleles{$bases[0]}++;
+                                                $P2alleles{$bases[1]}++;
+						$P2alleles{"Calls"}++;
+                                                $P2count2++;
+					}
 				}
 			}
 		}
@@ -147,33 +188,28 @@ while (<STDIN>){
 			my $b1 = $bases[1];
 			#Minor allele
 			my $b2 = $bases[0];
-			unless (($BC{"P1"}{"Calls"}) and ($BC{"P2"}{"Calls"})){
-				goto SKIP;
-			}unless (($BC{"P1"}{"Calls"} >= 5) and ($BC{"P2"}{"Calls"} >= 5)){
-				goto SKIP;
-			}
 			my $p1;
 			my $p2;
 			my $q1;
 			my $q2;
 			#Allele frequency of each allele in each population
-			if ($BC{"P1"}{$b1}){
-				$p1 = $BC{"P1"}{$b1}/($BC{"P1"}{"Calls"}*2);
+			if ($P1alleles{$b1}){
+				$p1 = $P1alleles{$b1}/($P1alleles{"Calls"}*2);
 			}else{
 				$p1 = 0.01;
 			}
-			if ($BC{"P2"}{$b1}){
-				$p2 = $BC{"P2"}{$b1}/($BC{"P2"}{"Calls"}*2);
+			if ($P2alleles{$b1}){
+				$p2 = $P2alleles{$b1}/($P2alleles{"Calls"}*2);
 			}else{
 				$p2 = 0.01;
 			}
-			if ($BC{"P1"}{$b2}){
-				$q1 = $BC{"P1"}{$b2}/($BC{"P1"}{"Calls"}*2);
+			if ($P1alleles{$b2}){
+				$q1 = $P1alleles{$b2}/($P1alleles{"Calls"}*2);
 			}else{
 				$q1 = 0.01;
 			}
-			if ($BC{"P2"}{$b2}){
-				$q2 = $BC{"P2"}{$b2}/($BC{"P2"}{"Calls"}*2);
+			if ($P2alleles{$b2}){
+				$q2 = $P2alleles{$b2}/($P2alleles{"Calls"}*2);
 			}else{
 				$q2 = 0.01;
 			}
