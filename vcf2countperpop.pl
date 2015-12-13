@@ -70,8 +70,8 @@ while(<STDIN>){
 			unless ($info =~m/DP/){
 				next;
 			}
+			my $any_data;
 			if ($alt eq '.'){ #If there are no alternate allele
-				print "\n$chrome\t$pos";
 				foreach my $i (0..$#fields){
 					my @tmp = split(/:/,$fields[$i]);
 					my $depth = $tmp[1];
@@ -81,9 +81,14 @@ while(<STDIN>){
 					if ($depth >= $min_dp){
 						if ($samplelist{$i}){
 							$populations_sampled{$samplelist{$i}}++;
+							$any_data++;
 						}
 					}
 				}
+				unless($any_data){
+					next;
+				}
+				print "\n$chrome\t$pos";
 				foreach my $population (@poplist){
 					if ($populations_sampled{$population}){
 						print "\t$populations_sampled{$population}";
@@ -93,7 +98,6 @@ while(<STDIN>){
 				}
 			}
 			else{
-				print "\n$chrome\t$pos";
 				foreach my $i (0..$#fields){
 					my @tmp = split(/:/,$fields[$i]);
 					my $depth = $tmp[2];
@@ -103,9 +107,14 @@ while(<STDIN>){
 					if ($depth >= $min_dp){
 						if($samplelist{$i}){
 							$populations_sampled{$samplelist{$i}}++;
+							$any_data++;
 						}
 					}
 				}
+				unless ($any_data){
+					next;
+				}
+				print "\n$chrome\t$pos";
 				foreach my $population (@poplist){
 					if ($populations_sampled{$population}){
 						print "\t$populations_sampled{$population}";
