@@ -1,7 +1,7 @@
 #!/bin/perl
 use warnings;
 use strict;
-
+#Usage: cat snptable | perl thiscript.pl parentfile > parentcounts.txt
 my $parentfile = $ARGV[0]; #This is a just a list of parents. One per line
 
 my %parents;

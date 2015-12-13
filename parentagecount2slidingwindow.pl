@@ -1,7 +1,7 @@
 #!/bin/perl
 use warnings;
 use strict;
-
+#Usage: cat parentagecounts | perl thiscript.pl windowsize > output
 my $current_chr;
 my $window_size = $ARGV[0];
 my $start = 0;
