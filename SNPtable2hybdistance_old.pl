@@ -2,6 +2,7 @@
 use warnings;
 use strict;
 #This script prints out each site where a snp is unique to one parent, or where it is unique to the hybrid.
+#This version has problems with rare alleles because it includes rare alleles in one population.
 #Requires parents to have 5 individuals sampled.
 my $samplefile = $ARGV[0];
 my %printlist;
