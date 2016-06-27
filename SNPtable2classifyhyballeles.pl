@@ -1,7 +1,12 @@
 #!/bin/perl
 use warnings;
 use strict;
-#This script prints out each site where there are fixed differences between the parents and if the hybrid species is heterozygous.
+use List::Util 'shuffle';
+#This script divides sites into three categories. 
+#-Variable in the parents (hybrids have no new alelles)
+#-Fixed differences in the parents
+#-f
+NOT DONE!
 #Requires parents to have 5 individuals sampled.
 my $samplefile = $ARGV[0];
 my %printlist;
@@ -21,6 +26,7 @@ my @good_number_list;
 my %good_number_hash;
 my %species;
 my $max_count = 20;
+my @hybrid_species= qw(anomalus deserticola paradoxus);
 while(<STDIN>){
   	$counter++;
 	chomp;
@@ -35,7 +41,7 @@ while(<STDIN>){
 				$good_number_hash{$i}++;
       			}
     		}
-		print "chrom\tpos\tsample\tspecies\tHexp\tH";
+		print "chrom\tpos\tvalue";
     		next;
   	}
 	unless ($a[3]){
@@ -47,6 +53,7 @@ while(<STDIN>){
   	my %P2alleles;
   	my $P1count = 0;
   	my $P2count = 0;
+	my %species_count;
   	if (($counter % 100000)== 0){
 		print STDERR "Processing $chrom $pos...\n";
 	}
@@ -56,12 +63,21 @@ while(<STDIN>){
 			        $P1count++;
 		      	}elsif($species{$i} eq "P2"){
 			        $P2count++;
-		      	}
+		      	}else{
+				$species_count{$species{$i}}++;
+			}
     		}
   	}
   	unless(($P1count >=5) and ($P2count >= 5)){
     		next;
   	}
+	foreach my $key (@hybrid_species){ #Make sure each hybrid species has atleast two genotypes
+		unless($species_count{$key}){
+			goto SKIP;
+		}elsif($species_count{$key} < 2){
+			goto SKIP;
+		}
+	}
 	my $min_count; #Samples are subset down to the lowest sample size of either parent
 	if ($P1count < $P2count){
 		$min_count = $P1count;
@@ -71,39 +87,59 @@ while(<STDIN>){
 	if ($min_count > $max_count){
 		$min_count = $max_count;
 	}
-	my $P1count2 = 0;
-	my $P2count2 = 0;
-	my %alleles;
-	foreach my $j (keys %good_number_hash){
-        	if ($a[$j] ne "NN"){ #if it doesn't count itself
+        my $P1count2 = 0;
+        my $P2count2 = 0;
+	my %parental_alleles;
+	
+        foreach my $j ( shuffle keys %good_number_hash){ #Load up parental alleles
+                if ($a[$j] ne "NN"){
                 	if ((($species{$j} eq "P1") and ($P1count2 < $min_count)) or (($species{$j} eq "P2") and ($P2count2 < $min_count))){
                         	if ($species{$j} eq "P1"){
                                 	$P1count2++;
                                 }else{
                                 	$P2count2++;
                                 }
-                                my @parentalbases = split(//,$a[$j]);
-				$alleles{$species{$j}}{$parentalbases[0]}++;
-				$alleles{$species{$j}}{$parentalbases[1]}++;
-                 	}
-        	}
-        }
-	my @P1alleles = keys %{$alleles{"P1"}};
-	my @P2alleles = keys %{$alleles{"P2"}};
-	unless ((scalar(@P1alleles) == 1) and (scalar(@P2alleles) == 1)){
-		next;
+                               	my @parentalbases = split(//,$a[$j]);
+				$parental_alleles{$parentalbases[0]}++;
+				$parental_alleles{$parentalbases[1]}++;
+                        }
+		}
 	}
-	if($P1alleles[0] eq $P2alleles[0]){
-		next;
-	}
-        foreach my $i (keys %good_number_hash){ #Load up parental alleles
-		if (($species{$i} ne "P1") and ($species{$i} ne "P2") and ($a[$i] ne "NN")){
-			if (($a[$i] eq "$P1alleles[0]$P2alleles[0]") or ($a[$i] eq "$P2alleles[0]$P1alleles[0]")){
-				print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t1\t1";
-			}else{
-				print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t1\t0";
+	#
+	my %hybrid_alleles;
+	my %hybrid_count;
+	foreach my $i ( shuffle keys %good_number_hash){
+		if ($a[$i] ne "NN"){
+			if (($species{$i} ne "P1") and ($species{$i} ne "P2")){
+				if ($hybrid_count{$species{$i}}){ #This only selects two per hybrid species.
+					if($hybrid_count{$species{$i}} == 2){ next;}
+				}
+				$hybrid_count{$species{$i}}++;
+				my @bases = split(//,$a[$i]);
+				foreach my $n(0..1){
+					unless ($parental_alleles{$bases[$n]}){
+						$hybrid_alleles{$bases[$n]}{$species{$i}}++;
+					}
+				}
 			}
 		}
 	}
+	unless(%hybrid_alleles){ #Go to next line if there are no new alleles in any of the hybrids
+		next;
+	}
+	my $printvalue;
+	foreach my $base (sort keys %hybrid_alleles){
+		if ($hybrid_alleles{$base}{"anomalus"}){
+			$printvalue .= 1;
+		}
+		if ($hybrid_alleles{$base}{"deserticola"}){	
+			$printvalue .= 2;
+		}
+		if ($hybrid_alleles{$base}{"paradoxus"}){
+			$printvalue .=3;
+		}
+		print "\n$chrom\t$pos\t$printvalue";
+		undef($printvalue);
+	}
+	SKIP:
 }
-

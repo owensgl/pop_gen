@@ -1,7 +1,7 @@
 #!/bin/perl
 use warnings;
 use strict;
-#This script prints out each site where a snp is unique to one parent, or where it is unique to the hybrid.
+#This script prints out each site where the parents are fixed differences, and says if the allele is parent 1, parent 2 or unique
 #Requires parents to have 5 individuals sampled.
 my $samplefile = $ARGV[0];
 my %printlist;
@@ -70,56 +70,58 @@ while(<STDIN>){
 	if ($min_count > $max_count){
 		$min_count = $max_count;
 	}
-        foreach my $i (keys %good_number_hash){ #Load up parental alleles
-		my $P1count2 = 0;
-		my $P2count2 = 0;
-                if ($a[$i] ne "NN"){
-			my @bases = split(//,$a[$i]);
-			my $het;
-			if ($bases[0] ne $bases[1]){
-				$het++;
+	my $P1count2 = 0;
+	my $P2count2 = 0;
+	my %alleles;
+        foreach my $j (keys %good_number_hash){ #Load up parental alleles
+                if ($a[$j] ne "NN"){ #if it doesn't count itself
+                        if ((($species{$j} eq "P1") and ($P1count2 < $min_count)) or (($species{$j} eq "P2") and ($P2count2 < $min_count))){
+                                if ($species{$j} eq "P1"){
+                                        $P1count2++;
+                                }else{
+                                       	$P2count2++;
+                                }
+                               	my @parentalbases = split(//,$a[$j]);
+				$alleles{$species{$j}}{$parentalbases[0]}++;
+				$alleles{$species{$j}}{$parentalbases[1]}++;
+                        }
+                }
+	}
+	#Check if they are fixed differences. 
+	foreach my $P1allele (keys %{$alleles{"P1"}}){
+		foreach my $P2allele (keys %{$alleles{"P2"}}){
+			if ($P1allele eq $P2allele){
+				goto NEXTLINE;
 			}
-			my %base0;
-			my %base1;
-			foreach my $j (keys %good_number_hash){
-				if (($j ne $i) and ($a[$j] ne "NN")){ #if it doesn't count itself
-					if ((($species{$j} eq "P1") and ($P1count2 < $min_count)) or (($species{$j} eq "P2") and ($P2count2 < $min_count))){
-						if ($species{$j} eq "P1"){
-							$P1count2++;
-						}else{
-							$P2count2++;
-						}
-						my @parentalbases = split(//,$a[$j]);
-						if (($bases[0] eq $parentalbases[0]) or ($bases[0] eq $parentalbases[1])){
-							$base0{$species{$j}}++;
-						}
-                                                if (($bases[1] eq $parentalbases[0]) or ($bases[1] eq $parentalbases[1])){
-                                                        $base1{$species{$j}}++;
-                                                }
-					}
-				}
-			}
-			if (($base0{"P1"}) and ($base0{"P2"})){ #it's in both parents
-				#it's shared by both parents, don't print it;
-			}elsif($base0{"P1"}){
-				print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t1"; #it's only in parent 1
-			}elsif($base0{"P2"}){
-				print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t2"; #It's only in parent 2
-			}else{
-				print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t0"; #It's not in the parents
-			}
-			if ($het){
-				if (($base1{"P1"}) and ($base1{"P2"})){ #it's in both parents
-                               		#it's shared by both parents, don't print it;
-	                        }elsif($base1{"P1"}){
-        	                        print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t1"; #it's only in parent 1
-               	 	        }elsif($base1{"P2"}){
-                        	        print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t2"; #It's only in parent 2
-                       		}else{
-                                	print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t0"; #It's not in the parents
-                        	}
-			}				
 		}
 	}
+	#Check hybrid alleles against parental ones
+	foreach my $i (keys %good_number_hash){
+		if (($a[$i] ne "NN") and ($species{$i} ne "P1") and ($species{$i} ne "P2")){
+			my @bases = split(//,$a[$i]);
+			my $P1type;
+			my $P2type;
+			my $uniquetype;
+			foreach my $n (0..1){
+				if ($alleles{"P1"}{$bases[$n]}){
+					$P1type++;
+				}elsif ($alleles{"P2"}{$bases[$n]}){
+					$P2type++;
+				}else{
+					$uniquetype++;
+				}
+			}
+			if ($P1type){
+                                print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t1"; #it's only in parent 1
+                        }
+			if($P2type){
+                                print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t2"; #It's only in parent 2
+                        }
+			if($uniquetype){
+                                print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t0"; #It's not in the parents
+			}
+		}
+	}
+	NEXTLINE:
 }
 

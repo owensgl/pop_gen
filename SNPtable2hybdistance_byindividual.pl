@@ -2,8 +2,8 @@
 use warnings;
 use strict;
 use List::MoreUtils qw(uniq);
-#Calculates genetic distance between all species, including standard error using genpofad distance. Must have two individuals per species for each site used.
-#The distance measure is a little suspect, look into it to make sure tri alellelic sites dont mess it up. Jan 25, 2016
+#pipe in a tab snp table
+#Calculates genetic distance between all samples using genpofad distance. Must have two individuals per species for each site used.
 my $genefile = $ARGV[0];
 my $samplefile = $ARGV[1];
 
@@ -79,7 +79,7 @@ while(<STDIN>){
 				push(@good_number_list, $i);
 			}
 		}
-		print "gene\tstart\tend\tpair\tdistance\tse\tn";
+		print "gene\tstart\tend\tsample1\tsample2\tpair\tdistance\tn";
 		next;
 	}
 	unless ($a[2]){
@@ -145,60 +145,53 @@ while(<STDIN>){
     		if (($geneend{$current_gene} < $pos) or ($genechr{$current_gene} ne $chrom)){
 #				print "Processing $pos which is after $current_gene ($genestart{$current_gene} - $geneend{$current_gene})\n";
 			LASTLINE:
-        		foreach my $i (0..$#species_array){
-                		foreach my $j (0..$#species_array){
-                        	#	if ($i eq $j){next;}
-					my $pair = "$species_array[$i]-$species_array[$j]";
-          				my $ave_dist = "NA";
+        		foreach my $i (@good_number_list){
+                		foreach my $j (@good_number_list){
+                        		if ($i <= $j){next;}
+					if ($species{$i} eq $species{$j}){next;}
+					my $sample1 = $species{$i};
+					my $sample2 = $species{$j};
+					my $pair = "$i-$j";
+          				my $species_pair = "$species{$i}-$species{$j}";
+					my $ave_dist = "NA";
        	   				unless($totaldistance{$pair}){
 				        	$totaldistance{$pair} = 0;
           				}
 					my $standard_error;
           				if ($totalsites{$pair}){
 		       				$ave_dist = $totaldistance{$pair}/$totalsites{$pair};
-						my @dist_array = @{$distances_hash_array{$pair}};
-						my $ss = 0; #calculate standard error
-						foreach my $dist (@dist_array){
-							my $value = ($dist - $ave_dist)**2;
-							$ss += $value;
-						}
-						my $divisor = $totalsites{$pair}*($totalsites{$pair} - 1);
-						if ($divisor eq "0"){
-							$standard_error = "NA";
-						}else{
-							$standard_error = $ss/ $divisor;
-						}
           				}else{
 						$totaldistance{$pair} = "NA";
             					$totalsites{$pair} = "NA";
-						$standard_error = "NA";
           				}
-          				print "\n$current_gene\t$genestart{$current_gene}\t$geneend{$current_gene}\t$pair\t$ave_dist\t$standard_error\t$totalsites{$pair}";
+          				print "\n$current_gene\t$genestart{$current_gene}\t$geneend{$current_gene}\t$samplelist{$i}\t$samplelist{$j}\t$species_pair\t$ave_dist\t$totalsites{$pair}";
         			}
       			}
       			undef($current_gene);
       			undef(%totalsites);
       			undef(%totaldistance);
-			undef(%distances_hash_array);
       			goto REPEAT;
     		}
   	}
   	GOTGENE:
-	foreach my $i (0..$#species_array){
-        	foreach my $j (0..$#species_array){
-                #	if ($i eq $j){next;}
-			$totalsites{"$species_array[$i]-$species_array[$j]"}++;
-                        my @alleles = keys %{$geno_hash{$species_array[$i]}};
+	foreach my $i (@good_number_list){
+        	foreach my $j (@good_number_list){
+                	if ($i <= $j){next;}
+			if (($a[$i] eq "NN") or ($a[$j] eq "NN")){next;}
+			if ($species{$i} eq $species{$j}){next;}
+			$totalsites{"$i-$j"}++;
+                        my @alleles = keys %{$geno_hash{$i}};
                         my $total_dist;
+			my $total_sim = 0;
                         foreach my $n (0..$#alleles){
-                        	unless ($geno_hash{$species_array[$j]}{$alleles[$n]}){
-                                	$geno_hash{$species_array[$j]}{$alleles[$n]} = 0;
+                        	unless ($geno_hash{$j}{$alleles[$n]}){
+                                	$geno_hash{$j}{$alleles[$n]} = 0;
                                 }
-                                my $dist = ($geno_hash{$species_array[$i]}{$alleles[$n]}/($species_counter{$species_array[$i]}*2)) * (1 - $geno_hash{$species_array[$j]}{$alleles[$n]}/($species_counter{$species_array[$j]}*2)); #p1 * (1-p2)
-                                $total_dist += $dist;
-                                $totaldistance{"$species_array[$i]-$species_array[$j]"} +=$total_dist;
-                                push(@{$distances_hash_array{"$species_array[$i]-$species_array[$j]"}},$total_dist);
+                                my $similarity = ($geno_hash{$i}{$alleles[$n]}/2) * ($geno_hash{$j}{$alleles[$n]}/2); #p1 * (1-p2)
+				$total_sim += $similarity;
 			}
+			$total_dist += (1 -$total_sim);
+			$totaldistance{"$i-$j"} += $total_dist;
      		}
     	}
 	if (eof()){

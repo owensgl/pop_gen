@@ -4,7 +4,7 @@ use strict;
 
 #This script takes in the hybcurve likelihood outputs and summarizes each window for plotting.
 my $in = $ARGV[0];
-my $map = $ARGV[1];
+my $map = "/home/owens/ref/bronze.windowtocm.1mb.txt";
 
 my %cmhash;
 open MAP, $map;
@@ -19,9 +19,9 @@ while (<MAP>){
 	my $cM_start = $a[3];
 	my $cM_end = $a[4];
 	my $cM_size = $a[5];
-	$cmhash{$chrom.$start}{"start"} = $cM_start;
-	$cmhash{$chrom.$start}{"end"} = $cM_end;
-	$cmhash{$chrom.$start}{"size"} = $cM_size;
+	$cmhash{$chrom."t".$start}{"start"} = $cM_start;
+	$cmhash{$chrom."t".$start}{"end"} = $cM_end;
+	$cmhash{$chrom."t".$start}{"size"} = $cM_size;
 }
 
 my $current_chrom;
@@ -93,7 +93,7 @@ while (<IN>){
 			}
 			my $status;
 			my $width = $highP - $lowP;
-			if ($width > 0.6){
+			if ($width > 0.5){
 				$status = "NA"
 			}
 			elsif ($highP < 0.5){
@@ -103,16 +103,16 @@ while (<IN>){
 			}else{
 				$status = "admixed";
 			}
-			unless($cmhash{$current_chrom.$current_start}{'start'}){
-				$cmhash{$current_chrom.$current_start}{'start'} = "0";
+			unless($cmhash{$current_chrom."t".$current_start}{'start'}){
+				$cmhash{$current_chrom."t".$current_start}{'start'} = "0";
 			}
-			unless($cmhash{$current_chrom.$current_start}{'end'}){
-				$cmhash{$current_chrom.$current_start}{'end'} = "NA";
+			unless($cmhash{$current_chrom."t".$current_start}{'end'}){
+				$cmhash{$current_chrom."t".$current_start}{'end'} = "NA";
 			}
-			unless($cmhash{$current_chrom.$current_start}{'size'}){
-				$cmhash{$current_chrom.$current_start}{'size'} = "NA";
+			unless($cmhash{$current_chrom."t".$current_start}{'size'}){
+				$cmhash{$current_chrom."t".$current_start}{'size'} = "NA";
 			}
-			print "\n$current_sample\t$current_chrom\t$current_start\t$current_end\t$cmhash{$current_chrom.$current_start}{'start'}\t$cmhash{$current_chrom.$current_start}{'end'}\t$cmhash{$current_chrom.$current_start}{'size'}\t$maxP\t$lowP\t$highP\t$width\t$status";
+			print qq(\n$current_sample\t$current_chrom\t$current_start\t$current_end\t$cmhash{$current_chrom."t".$current_start}{'start'}\t$cmhash{$current_chrom."t".$current_start}{'end'}\t$cmhash{$current_chrom."t".$current_start}{'size'}\t$maxP\t$lowP\t$highP\t$width\t$status);
 			
 			#Refresh variables
 			$current_sample = $sample;

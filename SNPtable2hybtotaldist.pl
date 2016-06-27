@@ -1,7 +1,7 @@
 #!/bin/perl
 use warnings;
 use strict;
-#This script prints out each site where there are fixed differences between the parents and if the hybrid species is heterozygous.
+#This script looks for invariant sites in the parents, and asks if the hybrid has a new allele at that site.
 #Requires parents to have 5 individuals sampled.
 my $samplefile = $ARGV[0];
 my %printlist;
@@ -21,6 +21,8 @@ my @good_number_list;
 my %good_number_hash;
 my %species;
 my $max_count = 20;
+my %totalsites;
+my %totaldist;
 while(<STDIN>){
   	$counter++;
 	chomp;
@@ -35,7 +37,6 @@ while(<STDIN>){
 				$good_number_hash{$i}++;
       			}
     		}
-		print "chrom\tpos\tsample\tspecies\tHexp\tH";
     		next;
   	}
 	unless ($a[3]){
@@ -74,36 +75,50 @@ while(<STDIN>){
 	my $P1count2 = 0;
 	my $P2count2 = 0;
 	my %alleles;
-	foreach my $j (keys %good_number_hash){
-        	if ($a[$j] ne "NN"){ #if it doesn't count itself
-                	if ((($species{$j} eq "P1") and ($P1count2 < $min_count)) or (($species{$j} eq "P2") and ($P2count2 < $min_count))){
-                        	if ($species{$j} eq "P1"){
-                                	$P1count2++;
+        foreach my $j (keys %good_number_hash){ #Load up parental alleles
+                if ($a[$j] ne "NN"){ #if it doesn't count itself
+                        if ((($species{$j} eq "P1") and ($P1count2 < $min_count)) or (($species{$j} eq "P2") and ($P2count2 < $min_count))){
+                                if ($species{$j} eq "P1"){
+                                        $P1count2++;
                                 }else{
-                                	$P2count2++;
+                                       	$P2count2++;
                                 }
-                                my @parentalbases = split(//,$a[$j]);
+                               	my @parentalbases = split(//,$a[$j]);
 				$alleles{$species{$j}}{$parentalbases[0]}++;
 				$alleles{$species{$j}}{$parentalbases[1]}++;
-                 	}
-        	}
-        }
-	my @P1alleles = keys %{$alleles{"P1"}};
-	my @P2alleles = keys %{$alleles{"P2"}};
-	unless ((scalar(@P1alleles) == 1) and (scalar(@P2alleles) == 1)){
-		next;
+                        }
+                }
 	}
-	if($P1alleles[0] eq $P2alleles[0]){
-		next;
+	#Make sure parents are invariant 
+	my $P1keys = scalar keys %{$alleles{"P1"}};
+	my $P2keys = scalar keys %{$alleles{"P2"}};
+	unless (($P1keys == 1) and ($P2keys == 1)){
+		goto NEXTLINE;
 	}
-        foreach my $i (keys %good_number_hash){ #Load up parental alleles
-		if (($species{$i} ne "P1") and ($species{$i} ne "P2") and ($a[$i] ne "NN")){
-			if (($a[$i] eq "$P1alleles[0]$P2alleles[0]") or ($a[$i] eq "$P2alleles[0]$P1alleles[0]")){
-				print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t1\t1";
-			}else{
-				print "\n$chrom\t$pos\t$samplelist{$i}\t$species{$i}\t1\t0";
+	#Check hybrid alleles against parental ones
+	foreach my $i (keys %good_number_hash){
+		if (($a[$i] ne "NN") and ($species{$i} ne "P1") and ($species{$i} ne "P2")){
+			my @bases = split(//,$a[$i]);
+			my $uniquetype;
+			foreach my $n (0..1){
+				if ($alleles{"P1"}{$bases[$n]}){
+				#Nothing
+				}else{
+					$uniquetype++;
+				}
+			}
+			$totalsites{$samplelist{$i}}++;
+			if ($uniquetype){
+				$totaldist{$samplelist{$i}}++;
 			}
 		}
 	}
+	NEXTLINE:
 }
-
+print "Sample\tsites\tvariablesites\tdist";
+foreach my $i (keys %good_number_hash){
+	if (($species{$i} ne "P1") and ($species{$i} ne "P2")){
+		my $dist = $totaldist{$samplelist{$i}}/$totalsites{$samplelist{$i}};
+		print "\n$samplelist{$i}\t$totalsites{$samplelist{$i}}\t$totaldist{$samplelist{$i}}\tdist";
+	}
+}
