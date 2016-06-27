@@ -27,6 +27,7 @@ while(<STDIN>){
         print "$_";
     }else{
         my %data;
+        my %count_alelles;
         #Load up information on site for parent samples
         foreach my $i (2..$#a){
             if ($parents{$sample{$i}}){
@@ -34,10 +35,13 @@ while(<STDIN>){
                     goto NEXTLINE;
                 }
                 my @alelles = split(/\|/,$a[$i]);
+                $count_alelles{$alelles[0]}++;
+                $count_alelles{$alelles[1]}++;
                 $data{"$sample{$i}.1"} = $alelles[0];
                 $data{"$sample{$i}.2"} = $alelles[1];
             }
         }
+        if (keys %count_alelles == 0){next;} #Skip sites where the parents have no variation.
         print "\n$a[0]\t$a[1]";
         foreach my $i (2..$#a){
             if ($a[$i] eq "N|N"){
