@@ -22,7 +22,7 @@ my @good_number_list;
 my %good_number_hash;
 my %species;
 my $max_count = 20;
-my @hybrid_species= qw(anomalus deserticola paradoxus);
+my @hybrid_species= qw(Ano Des Par);
 while(<STDIN>){
   	$counter++;
 	chomp;
@@ -125,13 +125,13 @@ while(<STDIN>){
 	}
 	my $printvalue;
 	foreach my $base (sort keys %hybrid_alleles){
-		if ($hybrid_alleles{$base}{"anomalus"}){
+		if ($hybrid_alleles{$base}{"Ano"}){
 			$printvalue .= 1;
 		}
-		if ($hybrid_alleles{$base}{"deserticola"}){	
+		if ($hybrid_alleles{$base}{"Des"}){	
 			$printvalue .= 2;
 		}
-		if ($hybrid_alleles{$base}{"paradoxus"}){
+		if ($hybrid_alleles{$base}{"Par"}){
 			$printvalue .=3;
 		}
 		print "\n$chrom\t$pos\t$printvalue";

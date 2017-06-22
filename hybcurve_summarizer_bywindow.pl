@@ -4,8 +4,8 @@ use strict;
 
 #This script takes in the hybcurve likelihood outputs and summarizes each window for plotting.
 my $in = $ARGV[0];
-my $map = "/home/owens/ref/bronze.windowtocm.1mb.txt";
-
+#my $map = "/home/owens/ref/bronze.windowtocm.1mb.txt";
+my $map = "/home/owens/ref/HanXRQr1.0-20151230.bp_to_cM.280x801.windows.txt";
 my %cmhash;
 open MAP, $map;
 while (<MAP>){

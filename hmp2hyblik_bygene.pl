@@ -34,13 +34,13 @@ while (<FASTA>){
 	chomp;
 	if ($_ =~/^\>/g){
 		my @a = split(/\ /, $_);
-		my $begin = $a[2];
+		my $begin = $a[3];
 		$begin =~ s/begin=//g;
-		my $end = $a[3];
+		my $end = $a[4];
 		$end =~ s/end=//g;
 		my $name = $a[0];
 		$name =~ s/>//g;
-		my $chr = $a[5];
+		my $chr = $a[6];
 		$chr =~ s/chr=//g;
 		$genestart{$name} = ($begin - 200);
 		$geneend{$name} = ($end + 200);
@@ -50,6 +50,7 @@ while (<FASTA>){
 }
 
 close FASTA;		 
+
 my %pop;
 my %popList;
 my %samplepop;

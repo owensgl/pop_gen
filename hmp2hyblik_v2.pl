@@ -215,8 +215,8 @@ while (<STDIN>){
 			}
 			foreach my $i ($badcolumns..$#a){
 				if ($samplepop{$i}){
-#					if ($samplepop{$i} eq "H"){
-					if (($samplepop{$i} eq "H") or ($samplepop{$i} eq "P1") or ($samplepop{$i} eq "P2")){
+					if ($samplepop{$i} eq "H"){
+					#if (($samplepop{$i} eq "H") or ($samplepop{$i} eq "P1") or ($samplepop{$i} eq "P2")){
 						if ($BC{$i}{"Calls"}){
 							$likelihoodcount{$i}++;
 							foreach my $percentP2 (0..100){
@@ -241,5 +241,5 @@ while (<STDIN>){
 	SKIP:
 }
 			
-sub integrate {
+#sub integrate {
 	

@@ -3,7 +3,7 @@ use warnings;
 use strict;
 
 #This script takes in the hybcurve likelihood outputs and summarizes each window for plotting.
-my $in = $ARGV[0];
+#my $in = $ARGV[0];
 my $current_chrom;
 my $current_sample;
 my $current_start;
@@ -12,8 +12,8 @@ my $current_gene;
 my $current_sites;
 my $Lcutoff = 1.92;
 my %hash;
-open IN, $in;
-while (<IN>){
+#open IN, $in;
+while (<STDIN>){
 	chomp;
 	my @a = split(/\t/,$_);
 	if ($. == 1){
