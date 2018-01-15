@@ -2,14 +2,13 @@
 use warnings;
 use strict;
 use POSIX;
+use Statistics::Distribution::Generator qw( :all );
+#This script takes the output from "/home/owens/bin/reformat/ctab2prepforparentblocks.pl" and simulates samples with different junction densities, with an exponential distribution. It uses the missing data patterns of my real samples and also simulates wrongly called identity using a bayesian strategy.
 
-#This script takes the output from "/home/owens/bin/reformat/ctab2prepforparentblocks.pl" and simulates samples with different junction densities. It uses the missing data patterns of my real samples and also simulates wrongly called identity using a bayesian strategy.
-
-my $min_junctions_per_cm = 10;
-my $max_junctions_per_cm = 20000;
-my $increment = 10;
-my $rep = 100; #Reps per species;
-my $total_cm = 1394.91; #For XRQ annuus genome.
+my $min_junctions_theta = 250;
+my $max_junctions_theta = 20000;
+my $increment = 250;
+my $rep = 20; #Reps per species;
 my $error_multiplier = $ARGV[0];
 
 my @species_list = ("Ano","Des","Par");
@@ -51,6 +50,7 @@ my %site;
 my %location;
 my $counter;
 my %err_hash;
+my %chromosomes;
 #Load in site data including where missing data is.
 while(<STDIN>){
   chomp;
@@ -68,6 +68,7 @@ while(<STDIN>){
     $err_hash{$counter} = $current_error;
     $site{$counter} = $chr;
     $location{$counter} = $cm;
+    $chromosomes{$chr}++;
     foreach my $i (4..$#a){
       if ($a[$i] eq "N"){
         $data{$name{$i}}{$counter} = 0;
@@ -77,23 +78,47 @@ while(<STDIN>){
     }  
   }
 }
-
+my $max_chr_length = 104;
 foreach my $current_species (@species_list){
-  for (my $density = $min_junctions_per_cm; $density <=$max_junctions_per_cm; $density += $increment){
-    my $junc_dist = 1 / $density;
+  for (my $density = $min_junctions_theta; $density <=$max_junctions_theta; $density += $increment){
     foreach my $template (sort keys %species){
       if ($species{$template} ne $current_species){
         next;
       }
       for (my $j = 1; $j <= $rep; $j+=1){
+	#Define the boundaries of the simulated blocks.
+	my %sim_junctions;
+#	my $start_run = time();
+	foreach my $chr (sort keys %chromosomes){
+ 	  my $current_spot = 0;
+          my $current_state = int(rand(2)) * 2;
+	  until($current_spot == $max_chr_length){
+	    my $increment = exponential($density);
+	    my $end = $current_spot+$increment;
+	    my $index = ceil($end);
+	    $sim_junctions{$chr}{$index}{$end}=$current_state;
+	    if ($current_state == 2){
+	      $current_state = 0;
+	    }else{
+	      $current_state = 2;
+	    }
+            $current_spot = $end;
+            if ($current_spot > $max_chr_length){
+              $current_spot = $max_chr_length;
+	    }
+          }
+        }
+#	my $end_run = time();
+#	my $run_time = $end_run - $start_run;
+#	print STDERR "Making exponential junctions took $run_time seconds\n";
         my $junc_counter;
-        my $start = rand($junc_dist);
         until($species{$template} eq $current_species){
           $template = (keys %species)[rand keys %species];
         }
         #Keep track of parentage using even and odd divisions of the increment;
         my $current_state;
         my $current_chr;
+#	$start_run = time();
         foreach my $n (1..$counter){
           my $chr = $site{$n};
           unless($current_chr){
@@ -107,17 +132,25 @@ foreach my $current_species (@species_list){
           if ($data{$template}{$n}){ #Only continue if it's got data in the template
             my $cm = $location{$n};
             my $true_state;
-            if ($cm < $start){
-              $true_state = 0;
-            }else{
-              my $window = floor(($cm - $start)/$junc_dist);
-              if ($window % 2 == 0){
-                $true_state = 2;
-              }else{
-                $true_state = 0;
-              }
-#print STDERR "\n$cm\t$window\t$true_state";
+	    my $index = ceil($cm);
+	    foreach my $spot (sort {$a <=> $b} keys %{$sim_junctions{$chr}{$index}}){
+	      if ($spot >= $cm){
+                $true_state = $sim_junctions{$chr}{$index}{$spot};
+		goto NEXTSPOT;
+	      }
             }
+	    foreach my $plus (1..50){
+	      my $new_index = $index + $plus;
+              foreach my $spot (sort {$a <=> $b} keys %{$sim_junctions{$chr}{$new_index}}){
+                if ($spot >= $cm){
+                  $true_state = $sim_junctions{$chr}{$new_index}{$spot};
+                  goto NEXTSPOT;
+                }
+	      }
+            }
+            NEXTSPOT:
+unless(defined $true_state){print STDERR "No true state: cm = $cm, chr = $chr"};
+            #print STDERR "\n$cm\t$window\t$true_state";
 #print "\n$cm\tTrue state is $true_state";
             my $accurate = 0; #Check to see if marker is randomly wrong.
     	    my $rand = rand(1);
@@ -146,6 +179,9 @@ foreach my $current_species (@species_list){
             }
           }
         }
+#	$end_run = time();
+#        $run_time = $end_run - $start_run;
+#	print STDERR "Counting junctions took $run_time seconds\n";
         print "\n$current_species\t$template\t$density\t$junc_counter";
       }
     }

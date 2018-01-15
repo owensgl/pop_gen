@@ -6,7 +6,7 @@ use strict;
 
 my $min_MAF = 0.05; #minimum total minor allele frequency
 my $min_n = 2; #minimum number of samples called per population
-my $max_Hobs = 0.5; #Maximum observed heterozygosity
+my $max_Hobs = 0.6; #Maximum observed heterozygosity
 my %samples;
 my @Good_samples;
 my %Anc;
