@@ -9,7 +9,7 @@ my %sample;
 my $window_size = 100000;
 my %het;
 my %site_count;
-my $min_depth = 5;
+my $min_depth = 1;
 while(<STDIN>){
   chomp;
   my @a = split(/\t/,$_);
