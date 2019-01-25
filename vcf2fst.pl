@@ -1,11 +1,11 @@
 #!/usr/bin/perl
 #This calculates weir and cockerhams Fst between two populations
-#Usage: cat snptable.tab | perl SNPtable2fst.pl sampleinfo.txt populations.txt > snptable.fst.txt
+#Usage: cat snptable.vcf | perl SNPtable2fst.pl sampleinfo.txt populations.txt > snptable.fst.txt
 use warnings;
 use strict;
 
 my $min_MAF = 0.05; #minimum total minor allele frequency
-my $min_n = 2; #minimum number of samples called per population
+my $min_n = 1; #minimum number of samples called per population, requires more than min_n
 my $max_Hobs = 0.6; #Maximum observed heterozygosity
 my %samples;
 my @Good_samples;
@@ -128,7 +128,7 @@ while (<STDIN>){
 	#print "\t".keys %total_alleles;
 	unless (($BC{"1"}{"Calls"}) and ($BC{"2"}{"Calls"})){
 		goto SKIP;
-	}unless(($BC{"1"}{"Calls"} > $min_n) and ($BC{"2"}{"Calls"} > $min_n)){
+	}unless(($BC{"1"}{"Calls"} >= $min_n) and ($BC{"2"}{"Calls"} >= $min_n)){
 		goto SKIP;
 		
 	}elsif (keys %total_alleles == 2){

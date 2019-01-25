@@ -1,7 +1,6 @@
 #!/bin/perl
 use strict;
 use warnings;
-#This counts the percent of 1/(n-1) heterozygotes that may come from barcode switching at different depths. From 5 to 15 total depth at the site.
 my %sample;
 my $counter;
 my %counts;
@@ -43,6 +42,17 @@ while(<STDIN>){
 }
 print "sample\ttotal_sites\thets\tpercent_het";
 foreach my $sample (sort values %sample){
- my $percent_het = $hets{$sample}/$counts{$sample};
+ my $percent_het;
+ unless($hets{$sample}){
+   $hets{$sample} = 0;
+ }
+ if ($counts{$sample}){
+   $percent_het = $hets{$sample}/$counts{$sample};
+ }else{
+   $percent_het = "NA";
+ }
+ unless($counts{$sample}){
+   $counts{$sample} = 0;
+ }
  print "\n$sample\t$counts{$sample}\t$hets{$sample}\t$percent_het";
 }
