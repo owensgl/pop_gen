@@ -33,7 +33,7 @@ while(<STDIN>){
      my $genotype = $info[0];
      if ($genotype eq './.'){next;}
      if ($genotype eq '.'){next;}
-     my $calls = split(/\//,$genotype);
+     my @calls = split(/\//,$genotype);
      if ($calls[0] ne $calls[1]){
        $hets{$sample{$i}}++;
      }
