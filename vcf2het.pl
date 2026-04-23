@@ -32,7 +32,9 @@ while(<STDIN>){
      my @info = split(/:/,$fields[$i]);
      my $genotype = $info[0];
      if ($genotype eq './.'){next;}
-     if ($genotype eq '0/1'){
+     if ($genotype eq '.'){next;}
+     my $calls = split(/\//,$genotype);
+     if ($calls[0] ne $calls[1]){
        $hets{$sample{$i}}++;
      }
      $counts{$sample{$i}}++;
